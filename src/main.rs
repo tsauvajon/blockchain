@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{hash_map, HashMap};
 use std::time::SystemTime;
 
 fn main() {
@@ -33,6 +33,14 @@ impl Block {
         match &self.hash {
             None => false,
             Some(hash) => *hash == self.calculate_hash(),
+        }
+    }
+
+    fn new() -> Self {
+        Block {
+            transactions: vec![],
+            hash: None,
+            previous_hash: None,
         }
     }
 }
@@ -131,4 +139,29 @@ impl Blockchain {
             Ok(())
         }
     }
+
+    fn new() -> Self {
+        Blockchain {
+            blocks: vec![],
+            accounts: HashMap::new(),
+            pending_transactions: vec![],
+        }
+    }
+}
+
+#[test]
+fn test_add_block() {
+    let mut chain = Blockchain::new();
+    let mut block = Block::new();
+
+    block.transactions.push(Transaction {
+        nonce: 0,
+        from_account_id: "hello".to_string(),
+        record: TransactionRecord::CreateUserAccount("world".to_string()),
+        signature: Some("signature".to_string()),
+        created_at: SystemTime::now(),
+    });
+    block.hash = Some(block.calculate_hash());
+
+    assert_eq!(Ok(()), chain.add_block(block))
 }
