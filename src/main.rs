@@ -1,8 +1,20 @@
-use std::collections::{hash_map, HashMap};
+use std::collections::HashMap;
 use std::time::SystemTime;
 
-fn main() {
-    println!("Hello, world!");
+fn main() -> Result<(), String> {
+    let mut chain = Blockchain::new();
+    let mut block = Block::new();
+
+    block.transactions.push(Transaction {
+        nonce: 0,
+        from_account_id: "hello".to_string(),
+        record: TransactionRecord::CreateUserAccount("world".to_string()),
+        signature: Some("signature".to_string()),
+        created_at: SystemTime::now(),
+    });
+    block.hash = Some(block.calculate_hash());
+
+    chain.add_block(block)
 }
 
 #[derive(Debug)]
