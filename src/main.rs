@@ -1,44 +1,13 @@
+/*!
+This is a basic Proof of Work blockchain implemented in Rust.
+I started that project to remind myself how a basic blockchain
+could work, and to learn more about Rust.
+*/
+
+#![deny(warnings, missing_docs, clippy::all, clippy::cargo)]
+
 use std::collections::HashMap;
 use std::time::SystemTime;
-
-#[cfg(not(tarpaulin_include))]
-fn main() -> Result<(), String> {
-    let mut chain = Blockchain::new();
-    let mut block = Block::new();
-
-    block.transactions.push(Transaction::new(
-        0,
-        TransactionRecord::CreateUserAccount("someone".to_string()),
-        None,
-    ));
-
-    block.transactions.push(Transaction::new(
-        0,
-        TransactionRecord::CreateUserAccount("someone else".to_string()),
-        None,
-    ));
-
-    block.transactions.push(Transaction::new(
-        0,
-        TransactionRecord::MintTokens {
-            to: "someone".to_string(),
-            amount: 400,
-        },
-        None,
-    ));
-
-    block.transactions.push(Transaction::new(
-        0,
-        TransactionRecord::SendTokens {
-            to: "someone else".to_string(),
-            amount: 200,
-        },
-        Some("someone".to_string()),
-    ));
-
-    block.hash = Some(block.calculate_hash());
-    chain.add_block(block)
-}
 
 #[derive(Debug)]
 struct Block {
@@ -141,7 +110,7 @@ impl Transaction {
                 world_state
                     .get_account_by_id(id)
                     .map_or(Ok(()), |_| Err("account already exists".to_string()))?;
-                world_state.add_account(id.to_owned())?;
+                world_state.add_account(id.to_string())?;
                 Ok(())
             }
 
@@ -527,4 +496,43 @@ fn test_cannot_create_duplicate_accounts() {
         Err("account already exists".to_string()),
         chain.add_account("someone".to_string())
     )
+}
+
+#[cfg(not(tarpaulin_include))]
+fn main() -> Result<(), String> {
+    let mut chain = Blockchain::new();
+    let mut block = Block::new();
+
+    block.transactions.push(Transaction::new(
+        0,
+        TransactionRecord::CreateUserAccount("someone".to_string()),
+        None,
+    ));
+
+    block.transactions.push(Transaction::new(
+        0,
+        TransactionRecord::CreateUserAccount("someone else".to_string()),
+        None,
+    ));
+
+    block.transactions.push(Transaction::new(
+        0,
+        TransactionRecord::MintTokens {
+            to: "someone".to_string(),
+            amount: 400,
+        },
+        None,
+    ));
+
+    block.transactions.push(Transaction::new(
+        0,
+        TransactionRecord::SendTokens {
+            to: "someone else".to_string(),
+            amount: 200,
+        },
+        Some("someone".to_string()),
+    ));
+
+    block.hash = Some(block.calculate_hash());
+    chain.add_block(block)
 }
