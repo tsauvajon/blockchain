@@ -9,20 +9,27 @@ could work, and to learn more about Rust.
 use std::collections::HashMap;
 use std::time::SystemTime;
 
+type Id = String;
+type Error = String;
+type Signature = String;
+type Hash = Vec<u8>;
+type Nonce = u64;
+type Amount = u64;
+
 #[derive(Debug)]
 struct Block {
     // All transactions contained in this block.
     transactions: Vec<Transaction>,
 
     /// Hash of the full block, i.e. hash all transactions hashes.
-    hash: Option<Vec<u8>>,
+    hash: Option<Hash>,
 
     /// Hash of the previous block.
-    previous_hash: Option<Vec<u8>>,
+    previous_hash: Option<Hash>,
 }
 
 impl Block {
-    fn calculate_hash(&self) -> Vec<u8> {
+    fn calculate_hash(&self) -> Hash {
         self.transactions
             .iter()
             .fold(&mut blake3::Hasher::new(), |hasher, transaction| {
@@ -52,36 +59,36 @@ impl Block {
 #[derive(Debug)]
 enum TransactionRecord {
     /// Creates a new account from a public key.
-    CreateUserAccount(String),
+    CreateUserAccount(Id),
 
     /// Sends tokens to another account.
-    SendTokens { to: String, amount: u64 },
+    SendTokens { to: Id, amount: Amount },
 
     /// Create new tokens.
-    MintTokens { to: String, amount: u64 },
+    MintTokens { to: Id, amount: Amount },
 }
 
 /// A change of state in the blockchain.
 #[derive(Debug)]
 struct Transaction {
     /// "number only used once".
-    nonce: u64,
+    nonce: Nonce,
 
     /// What account initiated the transaction.
-    from_account_id: Option<String>,
+    from_account_id: Option<Id>,
 
     /// What data is contained in the transaction.
     record: TransactionRecord,
 
     /// Signed hash of the transaction.
-    signature: Option<String>,
+    signature: Option<Signature>,
 
     /// Local time of creation.
     created_at: SystemTime,
 }
 
 impl Transaction {
-    fn new(nonce: u64, record: TransactionRecord, from: Option<String>) -> Self {
+    fn new(nonce: Nonce, record: TransactionRecord, from: Option<Id>) -> Self {
         Transaction {
             nonce,
             from_account_id: from,
@@ -91,7 +98,7 @@ impl Transaction {
         }
     }
 
-    fn calculate_hash(&self) -> Vec<u8> {
+    fn calculate_hash(&self) -> Hash {
         blake3::hash(
             format!(
                 "{:?}_{:?}_{:?}_{:?}",
@@ -104,7 +111,7 @@ impl Transaction {
     }
 
     // TODO: use a TransactionRecord trait for better polymorphism.
-    fn apply<T: WorldState>(&self, world_state: &mut T) -> Result<(), String> {
+    fn apply<T: WorldState>(&self, world_state: &mut T) -> Result<(), Error> {
         match &self.record {
             TransactionRecord::CreateUserAccount(id) => {
                 world_state
@@ -159,7 +166,7 @@ impl Transaction {
 #[derive(Debug, Clone)]
 struct Account {
     /// Number of tokens held.
-    tokens: u64,
+    tokens: Amount,
 }
 
 impl Account {
@@ -171,9 +178,9 @@ impl Account {
 
 /// Snapshot of the world, not to have to rebuild it every time we query it.
 trait WorldState {
-    fn get_account_by_id(&self, id: &String) -> Result<&Account, String>;
-    fn get_account_by_id_mut(&mut self, id: &String) -> Result<&mut Account, String>;
-    fn add_account(&mut self, id: String) -> Result<(), String>;
+    fn get_account_by_id(&self, id: &Id) -> Result<&Account, Error>;
+    fn get_account_by_id_mut(&mut self, id: &Id) -> Result<&mut Account, Error>;
+    fn add_account(&mut self, id: Id) -> Result<(), Error>;
 
     fn is_genesis(&self) -> bool;
 }
@@ -185,7 +192,7 @@ struct Blockchain {
     blocks: Vec<Block>,
 
     /// All accounts, it is the current "world state".
-    accounts: HashMap<String, Account>,
+    accounts: HashMap<Id, Account>,
 
     /// In-progress transactions.
     pending_transactions: Vec<Transaction>,
@@ -193,12 +200,12 @@ struct Blockchain {
 
 impl Blockchain {
     /// Get the hash of the last block in the chain.
-    fn get_last_block_hash(&self) -> Option<Vec<u8>> {
+    fn get_last_block_hash(&self) -> Option<Hash> {
         self.blocks.last()?.hash.clone()
     }
 
     /// If the block is correct, add it to the chain.
-    fn add_block(&mut self, block: Block) -> Result<(), String> {
+    fn add_block(&mut self, block: Block) -> Result<(), Error> {
         if !block.is_hash_valid() {
             return Err("invalid hash".to_string());
         }
@@ -239,21 +246,21 @@ impl WorldState for Blockchain {
         self.blocks.len() == 0
     }
 
-    fn get_account_by_id(&self, id: &String) -> Result<&Account, String> {
+    fn get_account_by_id(&self, id: &Id) -> Result<&Account, Error> {
         Ok(self
             .accounts
             .get(id)
             .ok_or("account doesn't exist".to_string())?)
     }
 
-    fn get_account_by_id_mut(&mut self, id: &String) -> Result<&mut Account, String> {
+    fn get_account_by_id_mut(&mut self, id: &Id) -> Result<&mut Account, Error> {
         Ok(self
             .accounts
             .get_mut(id)
             .ok_or("account doesn't exist".to_string())?)
     }
 
-    fn add_account(&mut self, id: String) -> Result<(), String> {
+    fn add_account(&mut self, id: Id) -> Result<(), Error> {
         if self.accounts.contains_key(&id) {
             Err("account already exists".to_string())
         } else {
@@ -330,7 +337,7 @@ fn test_add_block() {
 mod transaction_tests {
     use super::*;
 
-    fn create_user(world_state: &mut impl WorldState, id: &str) -> Result<(), String> {
+    fn create_user(world_state: &mut impl WorldState, id: &str) -> Result<(), Error> {
         let transaction = Transaction::new(
             0,
             TransactionRecord::CreateUserAccount(id.to_string()),
@@ -339,7 +346,11 @@ mod transaction_tests {
         transaction.apply(world_state)
     }
 
-    fn mint_tokens(world_state: &mut impl WorldState, id: &str, amount: u64) -> Result<(), String> {
+    fn mint_tokens(
+        world_state: &mut impl WorldState,
+        id: &str,
+        amount: Amount,
+    ) -> Result<(), Error> {
         let transaction = Transaction::new(
             0,
             TransactionRecord::MintTokens {
@@ -355,8 +366,8 @@ mod transaction_tests {
         world_state: &mut impl WorldState,
         from: &str,
         id: &str,
-        amount: u64,
-    ) -> Result<(), String> {
+        amount: Amount,
+    ) -> Result<(), Error> {
         let transaction = Transaction::new(
             0,
             TransactionRecord::SendTokens {
@@ -478,9 +489,9 @@ mod transaction_tests {
         let mut chain = Blockchain::new();
 
         create_user(&mut chain, "sender").unwrap();
-        mint_tokens(&mut chain, "sender", u64::MAX).unwrap();
+        mint_tokens(&mut chain, "sender", Amount::MAX).unwrap();
         create_user(&mut chain, "receiver").unwrap();
-        mint_tokens(&mut chain, "receiver", u64::MAX).unwrap();
+        mint_tokens(&mut chain, "receiver", Amount::MAX).unwrap();
 
         let res = send_tokens(&mut chain, "sender", "receiver", 5000);
         assert_eq!(Err("too many tokens".to_string()), res);
@@ -499,7 +510,7 @@ fn test_cannot_create_duplicate_accounts() {
 }
 
 #[cfg(not(tarpaulin_include))]
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Error> {
     let mut chain = Blockchain::new();
     let mut block = Block::new();
 
