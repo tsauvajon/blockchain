@@ -9,7 +9,24 @@ could work, and to learn more about Rust.
 use std::collections::HashMap;
 use std::time::SystemTime;
 
-type Id = String;
+#[derive(Debug, Clone, std::cmp::PartialEq, std::cmp::Eq, std::hash::Hash)]
+struct Id(String);
+impl std::fmt::Display for Id {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+impl From<String> for Id {
+    fn from(s: String) -> Self {
+        Id(s)
+    }
+}
+impl From<&str> for Id {
+    fn from(s: &str) -> Self {
+        Id(s.to_string())
+    }
+}
+
 type Error = String;
 type Signature = String;
 type Hash = Vec<u8>;
@@ -117,7 +134,7 @@ impl Transaction {
                 world_state
                     .get_account_by_id(id)
                     .map_or(Ok(()), |_| Err("account already exists".to_string()))?;
-                world_state.add_account(id.to_string())?;
+                world_state.add_account(id.to_owned())?;
                 Ok(())
             }
 
@@ -282,16 +299,9 @@ fn test_calculate_block_hash_is_deterministic_with_transactions() {
     let mut block1 = Block::new();
     let mut block2 = Block::new();
 
-    let transaction1 = Transaction::new(
-        5,
-        TransactionRecord::CreateUserAccount("hi".to_string()),
-        None,
-    );
-    let mut transaction2 = Transaction::new(
-        5,
-        TransactionRecord::CreateUserAccount("hi".to_string()),
-        None,
-    );
+    let transaction1 = Transaction::new(5, TransactionRecord::CreateUserAccount("hi".into()), None);
+    let mut transaction2 =
+        Transaction::new(5, TransactionRecord::CreateUserAccount("hi".into()), None);
     // make sure transactions are equal, even though that's
     // not what we're testing here
     transaction2.created_at = transaction1.created_at;
@@ -309,7 +319,7 @@ fn test_calculate_block_hash_does_not_collide() {
 
     block2.transactions.push(Transaction::new(
         5,
-        TransactionRecord::CreateUserAccount("hi".to_string()),
+        TransactionRecord::CreateUserAccount("hi".into()),
         None,
     ));
 
@@ -323,8 +333,8 @@ fn test_add_block() {
 
     block.transactions.push(Transaction {
         nonce: 0,
-        from_account_id: Some("hello".to_string()),
-        record: TransactionRecord::CreateUserAccount("world".to_string()),
+        from_account_id: Some("hello".into()),
+        record: TransactionRecord::CreateUserAccount("world".into()),
         signature: Some("signature".to_string()),
         created_at: SystemTime::now(),
     });
@@ -338,11 +348,8 @@ mod transaction_tests {
     use super::*;
 
     fn create_user(world_state: &mut impl WorldState, id: &str) -> Result<(), Error> {
-        let transaction = Transaction::new(
-            0,
-            TransactionRecord::CreateUserAccount(id.to_string()),
-            None,
-        );
+        let transaction =
+            Transaction::new(0, TransactionRecord::CreateUserAccount(id.into()), None);
         transaction.apply(world_state)
     }
 
@@ -354,7 +361,7 @@ mod transaction_tests {
         let transaction = Transaction::new(
             0,
             TransactionRecord::MintTokens {
-                to: id.to_string(),
+                to: id.into(),
                 amount,
             },
             None,
@@ -371,10 +378,10 @@ mod transaction_tests {
         let transaction = Transaction::new(
             0,
             TransactionRecord::SendTokens {
-                to: id.to_string(),
+                to: id.into(),
                 amount,
             },
-            Some(from.to_string()),
+            Some(from.into()),
         );
         transaction.apply(world_state)
     }
@@ -405,7 +412,7 @@ mod transaction_tests {
 
         assert_eq!(Ok(()), mint_tokens(&mut chain, account_id, 200));
 
-        let account = chain.get_account_by_id(&account_id.to_string()).unwrap();
+        let account = chain.get_account_by_id(&account_id.into()).unwrap();
         assert_eq!(200, account.tokens)
     }
 
@@ -428,10 +435,10 @@ mod transaction_tests {
         let transaction = Transaction::new(
             1,
             TransactionRecord::MintTokens {
-                to: account_id.to_string(),
+                to: account_id.into(),
                 amount: 200,
             },
-            Some(account_id.to_string()),
+            Some(account_id.into()),
         );
         assert_eq!(
             Err("users cannot mint tokens".to_string()),
@@ -465,10 +472,10 @@ mod transaction_tests {
         let res = send_tokens(&mut chain, "sender", "receiver", 180);
         assert_eq!(Ok(()), res);
 
-        let sender = chain.get_account_by_id(&"sender".to_string()).unwrap();
+        let sender = chain.get_account_by_id(&"sender".into()).unwrap();
         assert_eq!(20, sender.tokens);
 
-        let receiver = chain.get_account_by_id(&"receiver".to_string()).unwrap();
+        let receiver = chain.get_account_by_id(&"receiver".into()).unwrap();
         assert_eq!(180, receiver.tokens);
     }
 
@@ -502,10 +509,10 @@ mod transaction_tests {
 fn test_cannot_create_duplicate_accounts() {
     let mut chain = Blockchain::new();
 
-    chain.add_account("someone".to_string()).unwrap();
+    chain.add_account("someone".into()).unwrap();
     assert_eq!(
         Err("account already exists".to_string()),
-        chain.add_account("someone".to_string())
+        chain.add_account("someone".into())
     )
 }
 
@@ -516,20 +523,20 @@ fn main() -> Result<(), Error> {
 
     block.transactions.push(Transaction::new(
         0,
-        TransactionRecord::CreateUserAccount("someone".to_string()),
+        TransactionRecord::CreateUserAccount("someone".into()),
         None,
     ));
 
     block.transactions.push(Transaction::new(
         0,
-        TransactionRecord::CreateUserAccount("someone else".to_string()),
+        TransactionRecord::CreateUserAccount("someone else".into()),
         None,
     ));
 
     block.transactions.push(Transaction::new(
         0,
         TransactionRecord::MintTokens {
-            to: "someone".to_string(),
+            to: "someone".into(),
             amount: 400,
         },
         None,
@@ -538,10 +545,10 @@ fn main() -> Result<(), Error> {
     block.transactions.push(Transaction::new(
         0,
         TransactionRecord::SendTokens {
-            to: "someone else".to_string(),
+            to: "someone else".into(),
             amount: 200,
         },
-        Some("someone".to_string()),
+        Some("someone".into()),
     ));
 
     block.hash = Some(block.calculate_hash());
