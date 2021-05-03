@@ -2,8 +2,8 @@ use crate::account::Account;
 use crate::block::Block;
 use crate::id::Id;
 use crate::transaction::Transaction;
-use crate::types::{Error, Hash};
 use crate::world::WorldState;
+use crate::{Error, Hash};
 use std::collections::HashMap;
 
 /// Contains the state of the blockchain.

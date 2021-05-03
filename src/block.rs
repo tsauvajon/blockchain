@@ -1,5 +1,5 @@
 use crate::transaction::Transaction;
-use crate::types::Hash;
+use crate::Hash;
 
 #[derive(Debug)]
 pub struct Block {

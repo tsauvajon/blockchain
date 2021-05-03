@@ -10,7 +10,7 @@ extern crate blockchain;
 use blockchain::block::Block;
 use blockchain::blockchain::Blockchain;
 use blockchain::transaction::{Transaction, TransactionRecord};
-use blockchain::types::Error;
+use blockchain::Error;
 
 #[cfg(not(tarpaulin_include))]
 fn main() -> Result<(), Error> {

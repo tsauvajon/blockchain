@@ -1,4 +1,4 @@
-use crate::types::Amount;
+pub type Amount = u64;
 
 #[derive(Debug, Clone)]
 pub struct Account {

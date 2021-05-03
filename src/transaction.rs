@@ -1,6 +1,7 @@
+use crate::account::Amount;
 use crate::id::Id;
-use crate::types::{Amount, Error, Hash, Nonce, Signature};
 use crate::world::WorldState;
+use crate::{Error, Hash, Nonce, Signature};
 use std::time::SystemTime;
 
 #[derive(Debug)]

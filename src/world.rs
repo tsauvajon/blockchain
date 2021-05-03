@@ -1,6 +1,6 @@
 use crate::account::Account;
 use crate::id::Id;
-use crate::types::Error;
+use crate::Error;
 
 /// Snapshot of the world, not to have to rebuild it every time we query it.
 pub trait WorldState {
