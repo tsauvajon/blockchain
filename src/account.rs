@@ -9,6 +9,12 @@ pub struct Account {
 impl Account {
     /// Constructor
     pub fn new() -> Self {
-        return Self { tokens: 0 };
+        Self { tokens: 0 }
+    }
+}
+
+impl Default for Account {
+    fn default() -> Self {
+        Self::new()
     }
 }

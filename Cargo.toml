@@ -2,8 +2,12 @@
 name = "blockchain"
 version = "0.1.0"
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "A proof of work Blockchain"
+repository = "https://github.com/tsauvajon/blockchain"
+readme = "README.md"
+license = "MIT"
+keywords = ["blobkchain"]
+categories = ["blockchain"]
 
 [dependencies]
 blake3 = "0.3.7"

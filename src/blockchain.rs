@@ -62,31 +62,35 @@ impl Blockchain {
     }
 }
 
+impl Default for Blockchain {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WorldState for Blockchain {
     fn is_genesis(&self) -> bool {
-        self.blocks.len() == 0
+        self.blocks.is_empty()
     }
 
     fn get_account_by_id(&self, id: &Id) -> Result<&Account, Error> {
-        Ok(self
-            .accounts
+        self.accounts
             .get(id)
-            .ok_or("account doesn't exist".to_string())?)
+            .ok_or_else(|| "account doesn't exist".to_string())
     }
 
     fn get_account_by_id_mut(&mut self, id: &Id) -> Result<&mut Account, Error> {
-        Ok(self
-            .accounts
+        self.accounts
             .get_mut(id)
-            .ok_or("account doesn't exist".to_string())?)
+            .ok_or_else(|| "account doesn't exist".to_string())
     }
 
     fn add_account(&mut self, id: Id) -> Result<(), Error> {
-        if self.accounts.contains_key(&id) {
-            Err("account already exists".to_string())
-        } else {
-            self.accounts.insert(id, Account::new());
+        if let std::collections::hash_map::Entry::Vacant(accounts) = self.accounts.entry(id) {
+            accounts.insert(Account::new());
             Ok(())
+        } else {
+            Err("account already exists".to_string())
         }
     }
 }

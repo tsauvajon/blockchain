@@ -41,6 +41,12 @@ impl Block {
     }
 }
 
+impl Default for Block {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[test]
 fn test_calculate_hash_is_deterministic() {
     let block1 = Block::new();
