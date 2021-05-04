@@ -1,3 +1,16 @@
+/*!
+This is a basic Proof of Work blockchain implemented in Rust.
+I started that project to remind myself how a basic blockchain
+could work, and to learn more about Rust.
+*/
+#![deny(
+    warnings,
+    missing_doc_code_examples,
+    missing_docs,
+    clippy::all,
+    clippy::cargo
+)]
+
 pub mod account;
 pub mod block;
 pub mod blockchain;
