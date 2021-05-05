@@ -21,8 +21,8 @@ pub struct Blockchain {
 
 impl Blockchain {
     /// Get the hash of the last block in the chain.
-    fn get_last_block_hash(&self) -> Option<Hash> {
-        self.blocks.last()?.hash.clone()
+    fn get_last_block_hash(&self) -> Option<&Hash> {
+        self.blocks.last()?.hash.as_ref()
     }
 
     /// If the block is correct, add it to the chain.
@@ -36,7 +36,7 @@ impl Blockchain {
             return Ok(());
         }
 
-        if block.previous_hash != self.get_last_block_hash() {
+        if block.previous_hash.as_ref() != self.get_last_block_hash() {
             return Err("invalid previous hash".to_string());
         }
 
