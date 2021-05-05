@@ -1,22 +1,49 @@
 use crate::account::Amount;
 use crate::id::Id;
 use crate::world::WorldState;
-use crate::{Error, Hash, Nonce, Signature};
+use crate::{Error, Hash, Nonce};
 use std::time::SystemTime;
 
+/// The cryptographic signature of a transaction.
+pub type Signature = String;
+
+/// A transaction record is describing the action a transaction
+/// executes against the Blockchain.
 #[derive(Debug)]
 pub enum TransactionRecord {
     /// Creates a new account from a public key.
     CreateUserAccount(Id),
 
     /// Sends tokens to another account.
-    SendTokens { to: Id, amount: Amount },
+    SendTokens {
+        /// ID of the account receiving the tokens.
+        to: Id,
+        /// Number of tokens to send.
+        amount: Amount,
+    },
 
     /// Create new tokens.
-    MintTokens { to: Id, amount: Amount },
+    MintTokens {
+        /// ID of the account receiving the tokens.
+        to: Id,
+        /// Number of tokens to send.
+        amount: Amount,
+    },
 }
 
-/// A change of state in the blockchain.
+/** A change of state in the blockchain.
+
+```
+# use crate::blockchain::transaction::{Transaction, TransactionRecord};
+# use crate::blockchain::blockchain::Blockchain;
+# let mut blockchain = Blockchain::new();
+
+let id = "some unique ID";
+let transaction = Transaction::new(0, TransactionRecord::CreateUserAccount(id.into()), None);
+
+transaction.apply(&mut blockchain);
+```
+*/
 #[derive(Debug)]
 pub struct Transaction {
     /// "number only used once".
@@ -36,6 +63,7 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    /// Constructor
     pub fn new(nonce: Nonce, record: TransactionRecord, from: Option<Id>) -> Self {
         Transaction {
             nonce,
@@ -46,6 +74,7 @@ impl Transaction {
         }
     }
 
+    /// Calculate the cryptographic hash of this transaction.
     pub fn calculate_hash(&self) -> Hash {
         blake3::hash(
             format!(
@@ -58,7 +87,8 @@ impl Transaction {
         .to_vec()
     }
 
-    // TODO: use a TransactionRecord trait for better polymorphism.
+    /// Execute this transaction against the Blockchain.
+    /// TODO: use a TransactionRecord trait for better polymorphism.
     pub fn apply<T: WorldState>(&self, world_state: &mut T) -> Result<(), Error> {
         match &self.record {
             TransactionRecord::CreateUserAccount(id) => {

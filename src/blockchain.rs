@@ -53,6 +53,7 @@ impl Blockchain {
         Ok(())
     }
 
+    /// Constructor
     pub fn new() -> Self {
         Blockchain {
             blocks: vec![],

@@ -1,9 +1,27 @@
 use crate::transaction::Transaction;
 use crate::Hash;
 
+/**
+A block contains a number of transactions.
+It is only valid in the context of the blockchain: its hash depends on the
+previous block.
+
+```
+# use crate::blockchain::transaction::{Transaction, TransactionRecord};
+# use crate::blockchain::block::Block;
+# use std::str;
+
+let mut block = Block::new();
+
+let transaction = Transaction::new(5, TransactionRecord::CreateUserAccount("hi".into()), None);
+block.transactions.push(transaction);
+
+println!("{:02X?}", block.calculate_hash());
+```
+*/
 #[derive(Debug)]
 pub struct Block {
-    // All transactions contained in this block.
+    /// All transactions contained in this block.
     pub transactions: Vec<Transaction>,
 
     /// Hash of the full block, i.e. hash all transactions hashes.
@@ -14,6 +32,7 @@ pub struct Block {
 }
 
 impl Block {
+    /// Calculate the cryptographic hash of this block.
     pub fn calculate_hash(&self) -> Hash {
         self.transactions
             .iter()
@@ -25,6 +44,7 @@ impl Block {
             .to_vec()
     }
 
+    /// Is this block's hash valid?
     pub fn is_hash_valid(&self) -> bool {
         match &self.hash {
             None => false,
@@ -32,6 +52,7 @@ impl Block {
         }
     }
 
+    /// Constructor
     pub fn new() -> Self {
         Block {
             transactions: vec![],
